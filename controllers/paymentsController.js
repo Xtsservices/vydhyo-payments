@@ -116,3 +116,58 @@ exports.getMultipleAppointmentPayments = async (req, res) => {
     res.status(500).json({ message: 'Error fetching appointment payments', error: error.message });
   }
 }
+
+
+// Get total amount of all payments with paymentStatus 'success' for today, this week, and this month
+exports.getTotalAmount = async (req, res) => {
+  try {
+    const now = new Date();
+
+    // Today
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
+    // This week (assuming week starts on Sunday)
+    const dayOfWeek = now.getDay(); // 0 (Sun) - 6 (Sat)
+    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+    // This month
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+    // Helper function for aggregation
+    async function getTotal(start, end) {
+      const result = await paymentModel.aggregate([
+        {
+          $match: {
+            paymentStatus: 'success',
+            createdAt: { $gte: start, $lt: end }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalAmount: { $sum: "$finalAmount" }
+          }
+        }
+      ]);
+      return result.length > 0 ? result[0].totalAmount : 0;
+    }
+
+    const [todayTotal, weekTotal, monthTotal] = await Promise.all([
+      getTotal(startOfToday, endOfToday),
+      getTotal(startOfWeek, endOfWeek),
+      getTotal(startOfMonth, endOfMonth)
+    ]);
+
+    return res.status(200).json({
+      today: todayTotal,
+      week: weekTotal,
+      month: monthTotal
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error calculating total amount', error: error.message });
+  }
+};
