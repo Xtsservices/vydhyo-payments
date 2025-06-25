@@ -137,15 +137,20 @@ exports.getTotalAmount = async (req, res) => {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
+    // Doctor filter
+    const doctorId = req.query.doctorId || req.body.doctorId;
+
     // Helper function for aggregation
     async function getTotal(start, end) {
+      const match = {
+        paymentStatus: 'success',
+        createdAt: { $gte: start, $lt: end }
+      };
+      if (doctorId) {
+        match.doctorId = doctorId;
+      }
       const result = await paymentModel.aggregate([
-        {
-          $match: {
-            paymentStatus: 'success',
-            createdAt: { $gte: start, $lt: end }
-          }
-        },
+        { $match: match },
         {
           $group: {
             _id: null,
@@ -156,16 +161,36 @@ exports.getTotalAmount = async (req, res) => {
       return result.length > 0 ? result[0].totalAmount : 0;
     }
 
-    const [todayTotal, weekTotal, monthTotal] = await Promise.all([
+    // Helper for all-time total
+    async function getAllTimeTotal() {
+      const match = { paymentStatus: 'success' };
+      if (doctorId) {
+        match.doctorId = doctorId;
+      }
+      const result = await paymentModel.aggregate([
+        { $match: match },
+        {
+          $group: {
+            _id: null,
+            totalAmount: { $sum: "$finalAmount" }
+          }
+        }
+      ]);
+      return result.length > 0 ? result[0].totalAmount : 0;
+    }
+
+    const [todayTotal, weekTotal, monthTotal, allTimeTotal] = await Promise.all([
       getTotal(startOfToday, endOfToday),
       getTotal(startOfWeek, endOfWeek),
-      getTotal(startOfMonth, endOfMonth)
+      getTotal(startOfMonth, endOfMonth),
+      getAllTimeTotal()
     ]);
 
     return res.status(200).json({
       today: todayTotal,
       week: weekTotal,
-      month: monthTotal
+      month: monthTotal,
+      total: allTimeTotal
     });
   } catch (error) {
     res.status(500).json({ message: 'Error calculating total amount', error: error.message });
