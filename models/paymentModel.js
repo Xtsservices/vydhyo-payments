@@ -22,14 +22,14 @@ const paymentSchema = new mongoose.Schema({
     },
     paymentStatus: {
         type: String,
-        enum: ['pending', 'success', 'failed', 'refunded'],
+        enum: ['pending', 'paid', 'cancelled', 'refund_pending', 'refunded', 'refund_failed'],
         default: 'pending'
     },
     transactionId: { type: String },
     paymentGateway: { type: String },
     paidAt: { type: Date, default: Date.now },
-    createdBy: { type: Date },
-    updatedBy: { type: Date },
+    createdBy: { type: String },
+    updatedBy: { type: String },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
 });
