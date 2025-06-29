@@ -100,7 +100,7 @@ exports.getMultipleAppointmentPayments = async (req, res) => {
       });
     }
 
-    const payments = await paymentModel.find({ appointmentId : { $in: appointmentIds } });
+    const payments = await paymentModel.find({ appointmentId: { $in: appointmentIds } });
     if (!payments || payments.length === 0) {
       return res.status(404).json({
         status: 'fail',
@@ -116,7 +116,6 @@ exports.getMultipleAppointmentPayments = async (req, res) => {
     res.status(500).json({ message: 'Error fetching appointment payments', error: error.message });
   }
 }
-
 
 // Get total amount of all payments with paymentStatus 'success' for today, this week, and this month
 exports.getTotalAmount = async (req, res) => {
@@ -196,3 +195,47 @@ exports.getTotalAmount = async (req, res) => {
     res.status(500).json({ message: 'Error calculating total amount', error: error.message });
   }
 };
+
+exports.updatePaymentByAppointment = async (req, res) => {
+  try {
+    const { appointmentId, status } = req.body;
+    if (!appointmentId) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Appointment ID is required',
+      });
+    }
+    if (!status) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Status is required',
+      });
+    }
+
+    const payment = await paymentModel.findOneAndUpdate(
+      { "appointmentId": appointmentId },
+      {
+        $set: {
+          paymentStatus: status,
+          updatedBy: req.headers ? req.headers.userid : '',
+          updatedAt: new Date()   
+        }
+      },
+      { new: true }
+    );
+    if (!payment) {
+      return res.status(404).json({
+        status: 'fail',
+        message: `Payment not found with this appointment ID ${appointmentId}`,
+      });
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'Payment updated successfully',
+      data: payment,
+    });
+  } catch (error) {
+    res.status(500).json({ status: 'fail', message: 'Error updating payment', error: error.message });
+  }
+}
