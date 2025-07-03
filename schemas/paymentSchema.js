@@ -16,7 +16,7 @@ const paymentValidationSchema = Joi.object({
     .default('cash'),
 
   paymentStatus: Joi.string()
-    .valid('pending', 'success', 'failed', 'refunded')
+    .valid('pending', 'paid', 'cancelled', 'refund_pending', 'refunded', 'refund_failed')
     .default('pending'),
 
   transactionId: Joi.when('paymentMethod', {
