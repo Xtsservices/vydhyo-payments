@@ -14,6 +14,13 @@ const paymentSchema = new mongoose.Schema({
     },
     finalAmount: { type: Number, required: true },
     currency: { type: String, default: 'INR' },
+
+     paymentFrom: {
+        type: String,
+        enum: ['appointment', 'lab', 'pharmacy'],
+        required: true,
+    },
+
     paymentMethod: {
         type: String,
         enum: ['card', 'upi', 'netbanking', 'cash', 'wallet'],
