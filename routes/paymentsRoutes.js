@@ -9,6 +9,7 @@ const {
 
     getDoctorRevenue,
     getDoctorTodayAndThisMonthRevenue,
+    getTransactionHistory
    
 } = require('../controllers/paymentsController');
 
@@ -23,6 +24,7 @@ router.get('/getDoctorRevenueSummaryThismonth', getDoctorRevenueSummaryThismonth
 router.get('/getDoctorRevenue', getDoctorRevenue);
 router.get('/getDoctorTodayAndThisMonthRevenue/:paymentFrom', getDoctorTodayAndThisMonthRevenue);
 
+router.post('/getTransactionHistory', getTransactionHistory);
 
 
 module.exports = router;

@@ -879,3 +879,97 @@ exports.getDoctorTodayAndThisMonthRevenue = async (req, res) => {
     });
   }
 };
+
+
+exports.getTransactionHistory = async (req, res) => {
+  try {
+    const doctorId = req.headers.userid;
+    if (!doctorId) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Doctor ID is required",
+      });
+    }
+
+    const {
+      status,
+      service,
+      startDate,
+      endDate,
+      search,
+      page = 1,
+      limit = 10,
+    } = req.body;
+
+    const pageNumber = Math.max(1, parseInt(page));
+    const pageSize = Math.max(1, parseInt(limit));
+    const skip = (pageNumber - 1) * pageSize;
+
+    const query = { doctorId };
+    if (status) query.paymentStatus = status.toLowerCase();
+    if (service) query.paymentFrom = service.toLowerCase();
+    if (startDate || endDate) {
+      query.paidAt = {};
+      if (startDate) query.paidAt.$gte = new Date(startDate + "T00:00:00.000Z");
+      if (endDate) query.paidAt.$lte = new Date(endDate + "T23:59:59.999Z");
+    }
+
+    let transactions = await paymentModel.find(query).sort({ paidAt: -1 });
+
+    const enriched = await Promise.all(
+      transactions.map(async (txn) => {
+        const user = await getUserDetails(txn.userId);
+        const patientName = user
+          ? `${user.firstname} ${user.lastname}`.trim()
+          : "Unknown";
+
+        return {
+          ...txn.toObject(),
+          patientName,
+        };
+      })
+    );
+
+    let filtered = enriched;
+    if (search && typeof search === "string") {
+      const lowerSearch = search.toLowerCase();
+      filtered = enriched.filter(
+        (txn) =>
+          (txn.paymentId && txn.paymentId.toLowerCase().includes(lowerSearch)) ||
+          (txn.patientName && txn.patientName.toLowerCase().includes(lowerSearch))
+      );
+    }
+
+    const totalResults = filtered.length;
+    const totalPages = Math.ceil(totalResults / pageSize);
+
+    const paginatedData = filtered.slice(skip, skip + pageSize);
+
+    if (pageNumber > totalPages && totalResults > 0) {
+      return res.status(200).json({
+        status: "success",
+        message: `Page ${pageNumber} exceeds total pages (${totalPages})`,
+        totalResults,
+        totalPages,
+        currentPage: pageNumber,
+        data: [],
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      totalResults,
+      totalPages,
+      currentPage: pageNumber,
+      data: paginatedData,
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Error fetching transaction history",
+      error: error.message,
+    });
+  }
+};
