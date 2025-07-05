@@ -3,6 +3,21 @@ const Joi = require("joi");
 const paymentValidationSchema = Joi.object({
   userId: Joi.string().required(),
   doctorId: Joi.string().required(),
+  
+  labTestID: Joi.when("paymentFrom", {
+    is: "lab",
+    then: Joi.string().required().messages({
+      "any.required": "labTestID is required for lab payments",
+    }),
+    otherwise: Joi.string().optional().allow(null),
+  }),
+  pharmacyMedID : Joi.when("paymentFrom", {
+    is: "pharmacy",
+    then: Joi.string().required().messages({
+      "any.required": "pharmacyMedID is required for pharmacy payments",
+    }),
+    otherwise: Joi.string().optional().allow(null),
+  }),
   // appointmentId: Joi.string().required(),
 appointmentId: Joi.when("paymentFrom", {
     is: "appointment",
