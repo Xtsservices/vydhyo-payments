@@ -3,6 +3,9 @@ const sequenceSchema = require("../sequence/sequenceSchema");
 const paymentSchema = require("../schemas/paymentSchema");
 const { SEQUENCE_PREFIX } = require("../utils/constants");
 
+const axios = require("axios");
+
+
 exports.createPayment = async (req, res) => {
   try {
     console.log("paymentFrom", req.body);
@@ -114,9 +117,9 @@ exports.getAppointmentPayment = async (req, res) => {
     res
       .status(500)
       .json({
-        message: "Error fetching appointment payment",
-        error: error.message,
-      });
+      message: "Error fetching appointment payment",
+      error: error.message,
+    });
   }
 };
 
@@ -152,9 +155,9 @@ exports.getMultipleAppointmentPayments = async (req, res) => {
     res
       .status(500)
       .json({
-        message: "Error fetching appointment payments",
-        error: error.message,
-      });
+      message: "Error fetching appointment payments",
+      error: error.message,
+    });
   }
 };
 
@@ -250,9 +253,9 @@ exports.getTotalAmount = async (req, res) => {
     res
       .status(500)
       .json({
-        message: "Error calculating total amount",
-        error: error.message,
-      });
+      message: "Error calculating total amount",
+      error: error.message,
+    });
   }
 };
 
@@ -299,10 +302,10 @@ exports.updatePaymentByAppointment = async (req, res) => {
     res
       .status(500)
       .json({
-        status: "fail",
-        message: "Error updating payment",
-        error: error.message,
-      });
+      status: "fail",
+      message: "Error updating payment",
+      error: error.message,
+    });
   }
 };
 
@@ -436,6 +439,169 @@ console.log("revenueByCategory",revenueByCategory)
       message: "Error fetching revenue summary",
       error: error.message,
     });
+  }
+};
+
+
+//doctor revenue
+exports.getDoctorRevenue = async (req, res) => {
+  try {
+    const doctorId = req.headers.userid;
+    if (!doctorId) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Doctor ID is required",
+      });
+    }
+
+    const doctorDashboard = await paymentModel.aggregate([
+      {
+        $match: {
+          doctorId: doctorId,
+          paymentStatus: "paid",
+          paymentFrom: { $in: ["appointment", "lab", "pharmacy"] },
+        },
+      },
+      {
+        $facet: {
+          totalRevenue: [
+            {
+              $group: {
+                _id: null,
+                total: { $sum: "$finalAmount" },
+              },
+            },
+          ],
+          lastThreeTransactions: [
+            { $sort: { paidAt: -1 } },
+            { $limit: 3 },
+            { $project: { userId: 1, finalAmount: 1, paidAt: 1 } },
+          ],
+        },
+      },
+      {
+        $project: {
+          totalRevenue: { $arrayElemAt: ["$totalRevenue.total", 0] },
+          lastThreeTransactions: 1,
+        },
+      },
+    ]);
+
+    const result = doctorDashboard[0];
+    const userIds = result.lastThreeTransactions.map((tx) => tx.userId);
+
+    const userDetailsMap = {};
+    await Promise.all(
+      userIds.map(async (userId) => {
+        if (!userDetailsMap[userId]) {
+          const user = await getUserDetails(userId);
+          userDetailsMap[userId] = user?.firstname +" "+user?.lastname || "Unknown";
+
+        }
+      })
+    );
+    const minimalTransactions = result.lastThreeTransactions.map((tx) => ({
+      username: userDetailsMap[tx.userId],
+      finalAmount: tx.finalAmount,
+      paidAt: tx.paidAt,
+      userID: tx.userId,
+
+    }));
+
+    return res.status(200).json({
+      status: "success",
+      data: {
+        totalRevenue: result.totalRevenue || 0,
+        lastThreeTransactions: minimalTransactions,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Error fetching revenue summary",
+      error: error.message,
+    });
+  }
+};
+
+async function getUserDetails(userId) {
+  try {
+    const apiUrl = process.env.USER_SERVICE_URL;
+    const endpoint = process.env.VIEW_USER;
+    const fullUrl = `${apiUrl}${endpoint}`;
+
+    const response = await axios.get(fullUrl, {
+      params: { userId: userId },
+    });
+    return response.data?.data || null;
+  } catch (error) {
+    console.error(`Error fetching user details for ${userId}:`, error.message);
+    return null;
+  }
+}
+
+exports.createPharmacyPayment = async (req, res) => {
+  try {
+    console.log("paymentFrom", req.body);
+    const { error } = pharmacyPaymentValidationSchema.validate(req.body);
+    console.log("paymentFrom 2", error);
+
+    if (error) {
+      return res.status(400).json({
+        status: "fail",
+        message: error.details[0].message,
+      });
+    }
+
+    req.body.createdBy = req.headers ? req.headers.userid : null;
+    req.body.updatedBy = req.headers ? req.headers.userid : null;
+
+    const paymentCounter = await sequenceSchema.findByIdAndUpdate(
+      {
+        _id: SEQUENCE_PREFIX.PAYMENTS_SEQUENCE.PAYMENTS_MODEL,
+      },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+
+    console.log("paymentFrom 3", paymentCounter);
+
+    req.body.paymentId = SEQUENCE_PREFIX.PAYMENTS_SEQUENCE.SEQUENCE.concat(
+      paymentCounter.seq
+    );
+    req.body.finalAmount = calculateFinalAmount(
+      req.body.actualAmount,
+      req.body.discount,
+      req.body.discountType
+    );
+    if (req.body.finalAmount < 0) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Final amount cannot be negative",
+      });
+    }
+    console.log("paymentFrom 4", req.body);
+
+    const payment = await pharmacyPaymentModel.create(req.body);
+    console.log("paymentFrom 5", payment);
+
+    if (!payment) {
+      return res.status(404).json({
+        status: "fail",
+        message: "payment not created",
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "payment created successfully",
+      data: payment,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error creating appointment", error: error.message });
   }
 };
 
