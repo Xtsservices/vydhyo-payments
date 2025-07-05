@@ -8,6 +8,7 @@ const {
     getDoctorRevenueSummaryThismonth,
 
     getDoctorRevenue,
+    getDoctorTodayAndThisMonthRevenue,
    
 } = require('../controllers/paymentsController');
 
@@ -20,6 +21,7 @@ router.get('/getTodayRevenuebyDoctorId', getTodayRevenuebyDoctorId);
 router.get('/getDoctorRevenueSummaryThismonth', getDoctorRevenueSummaryThismonth);
 
 router.get('/getDoctorRevenue', getDoctorRevenue);
+router.get('/getDoctorTodayAndThisMonthRevenue/:paymentFrom', getDoctorTodayAndThisMonthRevenue);
 
 
 
