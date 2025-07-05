@@ -2,9 +2,9 @@ const paymentModel = require("../models/paymentModel");
 const sequenceSchema = require("../sequence/sequenceSchema");
 const paymentSchema = require("../schemas/paymentSchema");
 const { SEQUENCE_PREFIX } = require("../utils/constants");
+
 const axios = require("axios");
-const pharmacyPaymentValidationSchema = require("../schemas/pharmacyPaymentSchema");
-const pharmacyPaymentModel = require("../models/pharmacyPaymentModel");
+
 
 exports.createPayment = async (req, res) => {
   try {
@@ -442,6 +442,7 @@ console.log("revenueByCategory",revenueByCategory)
   }
 };
 
+
 //doctor revenue
 exports.getDoctorRevenue = async (req, res) => {
   try {
@@ -603,3 +604,4 @@ exports.createPharmacyPayment = async (req, res) => {
       .json({ message: "Error creating appointment", error: error.message });
   }
 };
+

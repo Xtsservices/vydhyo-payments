@@ -6,8 +6,9 @@ const {
     getMultipleAppointmentPayments, getTotalAmount, updatePaymentByAppointment,
     getTodayRevenuebyDoctorId,
     getDoctorRevenueSummaryThismonth,
+
     getDoctorRevenue,
-    createPharmacyPayment
+   
 } = require('../controllers/paymentsController');
 
 router.post('/createPayment', createPayment);
@@ -17,9 +18,9 @@ router.get('/getTotalAmount', getTotalAmount);
 router.put('/updatePaymentByAppointment', updatePaymentByAppointment);
 router.get('/getTodayRevenuebyDoctorId', getTodayRevenuebyDoctorId);
 router.get('/getDoctorRevenueSummaryThismonth', getDoctorRevenueSummaryThismonth);
+
 router.get('/getDoctorRevenue', getDoctorRevenue);
 
-router.post('/createPharmacyPayment', createPharmacyPayment);
 
 
 module.exports = router;

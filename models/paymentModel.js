@@ -4,7 +4,7 @@ const paymentSchema = new mongoose.Schema({
     paymentId: { type: String, required: true },
     userId: { type: String, required: true },
     doctorId: { type: String, required: true },
-    appointmentId: { type: String, required: true },
+    appointmentId: { type: String },
     actualAmount: { type: Number, required: true },
     discount: { type: Number, default: 0 },
     discountType: {
