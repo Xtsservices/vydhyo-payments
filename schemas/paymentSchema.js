@@ -3,8 +3,14 @@ const Joi = require("joi");
 const paymentValidationSchema = Joi.object({
   userId: Joi.string().required(),
   doctorId: Joi.string().required(),
-  appointmentId: Joi.string().required(),
-
+  // appointmentId: Joi.string().required(),
+appointmentId: Joi.when("paymentFrom", {
+    is: "appointment",
+    then: Joi.string().required().messages({
+      "any.required": "appointmentId is required for appointment payments",
+    }),
+    otherwise: Joi.string().optional().allow(null),
+  }),
   actualAmount: Joi.number().positive().required(),
   discountType: Joi.string().valid("percentage", "flat").default("flat"),
   discount: Joi.number().min(0).default(0),
