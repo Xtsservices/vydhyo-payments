@@ -5,6 +5,9 @@ const paymentSchema = new mongoose.Schema({
     userId: { type: String, required: true },
     doctorId: { type: String, required: true },
     appointmentId: { type: String },
+      labTestID: { type: String },
+      pharmacyMedID: { type: String },
+
     actualAmount: { type: Number, required: true },
     discount: { type: Number, default: 0 },
     discountType: {
