@@ -629,7 +629,6 @@ exports.getTransactionHistory = async (req, res) => {
     const pageSize = Math.max(1, parseInt(limit));
     const skip = (pageNumber - 1) * pageSize;
 
-    // Build base query
     const query = { doctorId };
     if (status) query.paymentStatus = status.toLowerCase();
     if (service) query.paymentFrom = service.toLowerCase();
@@ -639,10 +638,8 @@ exports.getTransactionHistory = async (req, res) => {
       if (endDate) query.paidAt.$lte = new Date(endDate + "T23:59:59.999Z");
     }
 
-    // Fetch transactions based on query (without search for now)
     let transactions = await paymentModel.find(query).sort({ paidAt: -1 });
 
-    // Enrich with patient names
     const enriched = await Promise.all(
       transactions.map(async (txn) => {
         const user = await getUserDetails(txn.userId);
@@ -657,7 +654,6 @@ exports.getTransactionHistory = async (req, res) => {
       })
     );
 
-    // Apply search on enriched data
     let filtered = enriched;
     if (search && typeof search === "string") {
       const lowerSearch = search.toLowerCase();
@@ -671,10 +667,8 @@ exports.getTransactionHistory = async (req, res) => {
     const totalResults = filtered.length;
     const totalPages = Math.ceil(totalResults / pageSize);
 
-    // Slice paginated results
     const paginatedData = filtered.slice(skip, skip + pageSize);
 
-    // Optional: warning for page overflow (but not failure)
     if (pageNumber > totalPages && totalResults > 0) {
       return res.status(200).json({
         status: "success",
