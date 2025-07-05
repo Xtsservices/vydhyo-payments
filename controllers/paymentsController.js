@@ -2,6 +2,8 @@ const paymentModel = require("../models/paymentModel");
 const sequenceSchema = require("../sequence/sequenceSchema");
 const paymentSchema = require("../schemas/paymentSchema");
 const { SEQUENCE_PREFIX } = require("../utils/constants");
+const pharmacyPaymentValidationSchema = require("../schemas/pharmacyPaymentSchema");
+const pharmacyPaymentModel = require("../models/pharmacyPaymentModel");
 
 exports.createPayment = async (req, res) => {
   try {
@@ -436,5 +438,70 @@ console.log("revenueByCategory",revenueByCategory)
       message: "Error fetching revenue summary",
       error: error.message,
     });
+  }
+};
+
+
+exports.createPharmacyPayment = async (req, res) => {
+  try {
+    console.log("paymentFrom", req.body);
+    const { error } = pharmacyPaymentValidationSchema.validate(req.body);
+    console.log("paymentFrom 2", error);
+
+    if (error) {
+      return res.status(400).json({
+        status: "fail",
+        message: error.details[0].message,
+      });
+    }
+
+    req.body.createdBy = req.headers ? req.headers.userid : null;
+    req.body.updatedBy = req.headers ? req.headers.userid : null;
+
+    const paymentCounter = await sequenceSchema.findByIdAndUpdate(
+      {
+        _id: SEQUENCE_PREFIX.PAYMENTS_SEQUENCE.PAYMENTS_MODEL,
+      },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+
+    console.log("paymentFrom 3", paymentCounter);
+
+    req.body.paymentId = SEQUENCE_PREFIX.PAYMENTS_SEQUENCE.SEQUENCE.concat(
+      paymentCounter.seq
+    );
+    req.body.finalAmount = calculateFinalAmount(
+      req.body.actualAmount,
+      req.body.discount,
+      req.body.discountType
+    );
+    if (req.body.finalAmount < 0) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Final amount cannot be negative",
+      });
+    }
+    console.log("paymentFrom 4", req.body);
+
+    const payment = await pharmacyPaymentModel.create(req.body);
+    console.log("paymentFrom 5", payment);
+
+    if (!payment) {
+      return res.status(404).json({
+        status: "fail",
+        message: "payment not created",
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "payment created successfully",
+      data: payment,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error creating appointment", error: error.message });
   }
 };
