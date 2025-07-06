@@ -692,8 +692,8 @@ exports.getRevenueAndPatients = async (req, res) => {
           todayRevenue: { $arrayElemAt: ['$today.revenue', 0] },
           todayPatients: { $arrayElemAt: ['$today.patientCount', 0] },
           monthRevenue: { $sum: ['$today.revenue', '$month.revenue'] },
-          monthPatients: { 
-            $size: { 
+          monthPatients: {
+            $size: {
               $setUnion: [
                 { $arrayElemAt: ['$today.patients', 0] },
                 { $arrayElemAt: ['$month.patients', 0] }
@@ -833,14 +833,14 @@ exports.getDoctorTodayAndThisMonthRevenue = async (req, res) => {
           _id: 0,
           todayRevenue: { $arrayElemAt: ['$today.revenue', 0] },
           todayPatients: { $arrayElemAt: ['$today.patientCount', 0] },
-          monthRevenue: { 
+          monthRevenue: {
             $sum: [
               { $ifNull: [{ $arrayElemAt: ['$today.revenue', 0] }, 0] },
               { $ifNull: [{ $arrayElemAt: ['$month.revenue', 0] }, 0] }
             ]
           },
-          monthPatients: { 
-            $size: { 
+          monthPatients: {
+            $size: {
               $setUnion: [
                 { $ifNull: [{ $arrayElemAt: ['$today.patients', 0] }, []] },
                 { $ifNull: [{ $arrayElemAt: ['$month.patients', 0] }, []] }
@@ -969,6 +969,70 @@ exports.getTransactionHistory = async (req, res) => {
     return res.status(500).json({
       status: "fail",
       message: "Error fetching transaction history",
+      error: error.message,
+    });
+  }
+};
+
+exports.getPatientHistory = async (req, res) => {
+  try {
+    const paymentId = req.query.paymentId?.trim();
+    if (!paymentId) {
+      return res.status(400).json({
+        status: "fail",
+        message: "paymentId is required in query parameters",
+      });
+    }
+    const payment = await paymentModel.findOne({ paymentId }).lean();
+
+    if (!payment) {
+      return res.status(404).json({
+        status: "fail",
+        message: `No transaction found for paymentId ${paymentId}`,
+      });
+    }
+    let userDetails = null;
+    userDetails = await getUserDetails(payment.userId);
+
+    let appointmentDetails = null;
+    if (payment?.appointmentId && payment?.paymentFrom == "appointment") {
+      appointmentDetails = await commanFunction.getAppointmentById(
+        payment?.appointmentId,
+        "appointment"
+      );
+    }
+
+    let pharmacyDetails = null;
+    if (payment?.pharmacyMedID && payment?.paymentFrom == "pharmacy") {
+      pharmacyDetails = await commanFunction.getAppointmentById(
+        payment?.pharmacyMedID,
+        "pharmacy"
+      );
+    }
+    let labDetails = null;
+
+    if (payment?.labTestID && payment?.paymentFrom == "lab") {
+      labDetails = await commanFunction.getAppointmentById(
+        payment?.labTestID,
+        "lab"
+      );
+    }
+
+    return res.status(200).json({
+      status: "success",
+      data: {
+        ...payment,
+        userDetails,
+        appointmentDetails,
+        pharmacyDetails,
+        labDetails
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Error fetching patient history",
       error: error.message,
     });
   }
