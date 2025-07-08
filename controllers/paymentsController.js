@@ -3,7 +3,7 @@ const sequenceSchema = require("../sequence/sequenceSchema");
 const paymentSchema = require("../schemas/paymentSchema");
 const { SEQUENCE_PREFIX } = require("../utils/constants");
 const Joi = require("joi");
-const commanFunction=require("../CommanClass/commanFunctions");
+const commanFunction=require("../CommanClass/commanFunctions"); 
 const axios = require("axios");
 
 
