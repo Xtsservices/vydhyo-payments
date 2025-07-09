@@ -5,7 +5,7 @@ const { SEQUENCE_PREFIX } = require("../utils/constants");
 const Joi = require("joi");
 const commanFunction=require("../CommanClass/commanFunctions"); 
 const axios = require("axios");
-
+const moment = require('moment-timezone');
 
 exports.createPayment = async (req, res) => {
   try {
@@ -732,7 +732,7 @@ exports.getRevenueAndPatients = async (req, res) => {
 };
 
 
-exports.getDoctorTodayAndThisMonthRevenue = async (req, res) => {
+exports.getDoctorTodayAndThisMonthRevenue2 = async (req, res) => {
   try {
     // Get doctorId from query params or headers
     const doctorId = req.query.doctorId || req.headers.userid;
@@ -872,6 +872,180 @@ exports.getDoctorTodayAndThisMonthRevenue = async (req, res) => {
     return res.status(200).json(response);
   } catch (error) {
     console.error(`Error calculating ${req.params.paymentFrom} revenue and patients:`, error);
+    return res.status(500).json({
+      status: 'fail',
+      message: 'Error fetching revenue summary',
+      error: error.message
+    });
+  }
+};
+
+// Validation schema
+const validationSchema = Joi.object({
+  doctorId: Joi.string().required(),
+  paymentFrom: Joi.string().valid('pharmacy', 'lab').required()
+});
+
+exports.getDoctorTodayAndThisMonthRevenue = async (req, res) => {
+  try {
+    // Get doctorId from query params or headers
+    const doctorId = req.query.doctorId || req.headers.userid;
+    const { paymentFrom } = req.params;
+
+    // Validate input
+    const { error } = validationSchema.validate({ doctorId, paymentFrom }, { abortEarly: false });
+    if (error) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Validation failed',
+        errors: error.details.map(detail => detail.message)
+      });
+    }
+
+    // Get current date in IST
+    const now = moment.tz('Asia/Kolkata');
+
+    // Define start of today and month in IST
+    const startOfTodayIST = now.clone().startOf('day').toDate(); // 00:00:00 IST
+    const startOfMonthIST = now.clone().startOf('month').toDate(); // 00:00:00 IST, 1st of month
+
+    // Convert to UTC for MongoDB query (MongoDB stores dates in UTC)
+    const startOfTodayUTC = moment(startOfTodayIST).utc().toDate();
+    const startOfMonthUTC = moment(startOfMonthIST).utc().toDate();
+
+    console.log('startOfTodayUTC:', startOfTodayUTC.toISOString()); // e.g., 2025-07-09T18:30:00.000Z
+    console.log('startOfMonthUTC:', startOfMonthUTC.toISOString()); // e.g., 2025-06-30T18:30:00.000Z
+
+    // Aggregation pipeline
+    const pipeline = [
+      // Match payments for the doctor, paid status, paymentFrom, and this month
+      {
+        $match: {
+          doctorId,
+          paymentStatus: 'paid',
+          paymentFrom,
+          paidAt: { $gte: startOfMonthUTC }
+        }
+      },
+      // Group by period (today or earlier in the month)
+      {
+        $group: {
+          _id: {
+            $cond: [
+              { $gte: ['$paidAt', startOfTodayUTC] },
+              'today',
+              'month'
+            ]
+          },
+          revenue: { $sum: '$finalAmount' },
+          patients: { $addToSet: '$userId' } // Unique user IDs
+        }
+      },
+      // Project to format each period
+      {
+        $project: {
+          _id: 0,
+          period: '$_id',
+          revenue: { $ifNull: ['$revenue', 0] },
+          patients: { $ifNull: ['$patients', []] },
+          patientCount: { $size: { $ifNull: ['$patients', []] } }
+        }
+      },
+      // Pivot to combine today and month results
+      {
+        $group: {
+          _id: null,
+          results: {
+            $push: {
+              period: '$period',
+              revenue: '$revenue',
+              patients: '$patients',
+              patientCount: '$patientCount'
+            }
+          }
+        }
+      },
+      // Final projection
+      {
+        $project: {
+          _id: 0,
+          today: {
+            $cond: [
+              { $in: ['today', '$results.period'] },
+              {
+                revenue: {
+                  $arrayElemAt: [
+                    '$results.revenue',
+                    { $indexOfArray: ['$results.period', 'today'] }
+                  ]
+                },
+                patients: {
+                  $arrayElemAt: [
+                    '$results.patientCount',
+                    { $indexOfArray: ['$results.period', 'today'] }
+                  ]
+                }
+              },
+              { revenue: 0, patients: 0 }
+            ]
+          },
+          month: {
+            revenue: { $sum: '$results.revenue' }, // Sum all revenue for the month
+            patients: {
+              $size: {
+                $setUnion: [
+                  {
+                    $cond: [
+                      { $in: ['today', '$results.period'] },
+                      {
+                        $arrayElemAt: [
+                          '$results.patients',
+                          { $indexOfArray: ['$results.period', 'today'] }
+                        ]
+                      },
+                      []
+                    ]
+                  },
+                  {
+                    $cond: [
+                      { $in: ['month', '$results.period'] },
+                      {
+                        $arrayElemAt: [
+                          '$results.patients',
+                          { $indexOfArray: ['$results.period', 'month'] }
+                        ]
+                      },
+                      []
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    ];
+
+    const [result] = await paymentModel.aggregate(pipeline);
+
+    // Build response
+    const response = {
+      status: 'success',
+      data: {
+        today: {
+          revenue: result?.today?.revenue || 0,
+          patients: result?.today?.patients || 0
+        },
+        month: {
+          revenue: result?.month?.revenue || 0,
+          patients: result?.month?.patients || 0
+        }
+      }
+    };
+
+    return res.status(200).json(response);
+  } catch (error) {
+    console.error(`Error calculating ${paymentFrom} revenue and patients:`, error.stack);
     return res.status(500).json({
       status: 'fail',
       message: 'Error fetching revenue summary',
