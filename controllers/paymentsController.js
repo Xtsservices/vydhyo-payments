@@ -519,7 +519,7 @@ exports.getDoctorRevenue = async (req, res) => {
 async function getUserDetails(userId) {
   try {
     const apiUrl = process.env.USER_SERVICE_URL;
-    const endpoint = process.env.VIEW_USER;
+    const endpoint = 'users/getUser';
     const fullUrl = `${apiUrl}${endpoint}`;
 
     const response = await axios.get(fullUrl, {

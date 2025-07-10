@@ -10,17 +10,17 @@ class AppointmentService {
       const serviceMap = {
         appointment: {
           baseUrl: process.env.APPOINTMENTS_SERVICE_URL,
-          endpoint: process.env.VIEW_APPOINTMENT,
+          endpoint: "appointment/getAppointment",
           paramName: 'appointmentId',
         },
         pharmacy: {
           baseUrl: process.env.USER_SERVICE_URL,
-          endpoint: process.env.VIEW_PHARMACYDETAILS,
+          endpoint: "pharmacy/getPharmacyDetail",
           paramName: 'pharmacyMedID',
         },
         lab: {
           baseUrl: process.env.USER_SERVICE_URL,
-          endpoint: process.env.VIEW_PATIENT_TEST_DETAILS,
+          endpoint: 'lab/getpatientTestDetails',
           paramName: 'labTestID',
         },
       };
