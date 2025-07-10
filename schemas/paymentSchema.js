@@ -3,7 +3,7 @@ const Joi = require("joi");
 const paymentValidationSchema = Joi.object({
   userId: Joi.string().required(),
   doctorId: Joi.string().required(),
-  
+  addressId: Joi.string().required(),
   labTestID: Joi.when("paymentFrom", {
     is: "lab",
     then: Joi.string().required().messages({
