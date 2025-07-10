@@ -9,10 +9,7 @@ const moment = require('moment-timezone');
 
 exports.createPayment = async (req, res) => {
   try {
-    console.log("paymentFrom", req.body);
     const { error } = paymentSchema.validate(req.body);
-    console.log("paymentFrom 2", error);
-
     if (error) {
       return res.status(400).json({
         status: "fail",
@@ -30,9 +27,6 @@ exports.createPayment = async (req, res) => {
       { $inc: { seq: 1 } },
       { new: true, upsert: true }
     );
-
-    console.log("paymentFrom 3", paymentCounter);
-
     req.body.paymentId = SEQUENCE_PREFIX.PAYMENTS_SEQUENCE.SEQUENCE.concat(
       paymentCounter.seq
     );
@@ -47,11 +41,7 @@ exports.createPayment = async (req, res) => {
         message: "Final amount cannot be negative",
       });
     }
-    console.log("paymentFrom 4", req.body);
-
     const payment = await paymentModel.create(req.body);
-    console.log("paymentFrom 5", payment);
-
     if (!payment) {
       return res.status(404).json({
         status: "fail",
