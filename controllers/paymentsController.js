@@ -9,7 +9,10 @@ const moment = require('moment-timezone');
 
 exports.createPayment = async (req, res) => {
   try {
+    console.log("paymentFrom", req.body);
     const { error } = paymentSchema.validate(req.body);
+    console.log("paymentFrom 2", error);
+
     if (error) {
       return res.status(400).json({
         status: "fail",
@@ -27,6 +30,9 @@ exports.createPayment = async (req, res) => {
       { $inc: { seq: 1 } },
       { new: true, upsert: true }
     );
+
+    console.log("paymentFrom 3", paymentCounter);
+
     req.body.paymentId = SEQUENCE_PREFIX.PAYMENTS_SEQUENCE.SEQUENCE.concat(
       paymentCounter.seq
     );
@@ -41,7 +47,11 @@ exports.createPayment = async (req, res) => {
         message: "Final amount cannot be negative",
       });
     }
+    console.log("paymentFrom 4", req.body);
+
     const payment = await paymentModel.create(req.body);
+    console.log("paymentFrom 5", payment);
+
     if (!payment) {
       return res.status(404).json({
         status: "fail",
@@ -152,30 +162,19 @@ exports.getMultipleAppointmentPayments = async (req, res) => {
   }
 };
 
-// Get total amount of all payments with paymentStatus 'success' for today, this week, and this month
+// Get total amount of all payments with paymentStatus 'paid' for today, this week, and this month
+
 exports.getTotalAmount = async (req, res) => {
   try {
     const now = new Date();
 
     // Today
-    const startOfToday = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate()
-    );
-    const endOfToday = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() + 1
-    );
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
 
-    // This week (assuming week starts on Sunday)
+    // This week (week starts on Sunday)
     const dayOfWeek = now.getDay(); // 0 (Sun) - 6 (Sat)
-    const startOfWeek = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() - dayOfWeek
-    );
+    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek);
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 7);
 
@@ -183,18 +182,13 @@ exports.getTotalAmount = async (req, res) => {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-    // Doctor filter
-    const doctorId = req.query.doctorId || req.body.doctorId;
-
-    // Helper function for aggregation
+    // Aggregation helper
     async function getTotal(start, end) {
       const match = {
-        paymentStatus: "success",
+        paymentStatus: "paid",
         createdAt: { $gte: start, $lt: end },
       };
-      if (doctorId) {
-        match.doctorId = doctorId;
-      }
+
       const result = await paymentModel.aggregate([
         { $match: match },
         {
@@ -207,14 +201,10 @@ exports.getTotalAmount = async (req, res) => {
       return result.length > 0 ? result[0].totalAmount : 0;
     }
 
-    // Helper for all-time total
+    // All-time total
     async function getAllTimeTotal() {
-      const match = { paymentStatus: "success" };
-      if (doctorId) {
-        match.doctorId = doctorId;
-      }
       const result = await paymentModel.aggregate([
-        { $match: match },
+        { $match: { paymentStatus: "paid" } },
         {
           $group: {
             _id: null,
@@ -225,14 +215,12 @@ exports.getTotalAmount = async (req, res) => {
       return result.length > 0 ? result[0].totalAmount : 0;
     }
 
-    const [todayTotal, weekTotal, monthTotal, allTimeTotal] = await Promise.all(
-      [
-        getTotal(startOfToday, endOfToday),
-        getTotal(startOfWeek, endOfWeek),
-        getTotal(startOfMonth, endOfMonth),
-        getAllTimeTotal(),
-      ]
-    );
+    const [todayTotal, weekTotal, monthTotal, allTimeTotal] = await Promise.all([
+      getTotal(startOfToday, endOfToday),
+      getTotal(startOfWeek, endOfWeek),
+      getTotal(startOfMonth, endOfMonth),
+      getAllTimeTotal(),
+    ]);
 
     return res.status(200).json({
       today: todayTotal,
@@ -241,14 +229,13 @@ exports.getTotalAmount = async (req, res) => {
       total: allTimeTotal,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({
+    res.status(500).json({
       message: "Error calculating total amount",
       error: error.message,
     });
   }
 };
+
 
 exports.updatePaymentByAppointment = async (req, res) => {
   try {

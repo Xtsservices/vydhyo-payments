@@ -4,7 +4,7 @@ const paymentSchema = new mongoose.Schema({
     paymentId: { type: String, required: true },
     userId: { type: String, required: true },
     doctorId: { type: String, required: true },
-    addressId: { type: String, required: true },
+    addressId: { type: String},
     appointmentId: { type: String },
       labTestID: { type: String },
       pharmacyMedID: { type: String },
