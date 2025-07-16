@@ -1188,3 +1188,37 @@ exports.getPatientHistory = async (req, res) => {
     });
   }
 };
+
+exports.getPaymentsByDoctorAndUser = async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+
+    // Validate doctorId and userId
+    if (!doctorId) {
+      return res.status(400).json({ error: 'Invalid Doctor ID ' });
+    }
+
+    // Fetch payments for the doctor and user
+    const payments = await paymentModel.find({
+      doctorId: doctorId,
+      paymentStatus: 'paid',
+    }).select('paymentId userId doctorId appointmentId actualAmount discount discountType finalAmount paymentStatus paidAt createdAt _id');
+
+    // If no payments found
+    if (!payments || payments.length === 0) {
+      return res.status(404).json({ message: 'No payments found for this doctor and patient' });
+    }
+
+    // Return the payments
+    return res.status(200).json({
+      success: true,
+      data: payments,
+    });
+  } catch (error) {
+    console.error('Error fetching payments by doctor and user:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal Server Error',
+    });
+  }
+};
