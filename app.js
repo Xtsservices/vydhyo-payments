@@ -5,6 +5,7 @@ require('dotenv').config();
 const connectDB = require('./utils/db');
 const logger = require('./utils/logger'); 
 const financeRoutes = require('./routes/paymentsRoutes');
+const expenseRoutes = require('./routes/expenseRoutes');
 // Middleware
 const app = express();
 app.use(express.json());
@@ -14,6 +15,7 @@ app.use(bodyParser.json());
 connectDB();
 // Routes
 app.use('/finance', financeRoutes);
+app.use('/finance', expenseRoutes);
 
 
 // Connect to MongoDB and start server
