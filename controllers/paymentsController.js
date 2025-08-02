@@ -6,6 +6,7 @@ const Joi = require("joi");
 const commanFunction=require("../CommanClass/commanFunctions"); 
 const axios = require("axios");
 const moment = require('moment-timezone');
+const expenseModel = require("../models/expenseModel");
 
 exports.createPayment = async (req, res) => {
   try {
@@ -486,10 +487,29 @@ exports.getDoctorRevenue = async (req, res) => {
 
     }));
 
+    // 👉 Fetch total expenditure
+    const expenditureAgg = await expenseModel.aggregate([
+      {
+        $match: {
+          userId: doctorId
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalExpenditure: { $sum: "$amount" },
+        },
+      },
+    ]);
+
+    const totalExpenditure = expenditureAgg[0]?.totalExpenditure || 0;
+
+
     return res.status(200).json({
       status: "success",
       data: {
         totalRevenue: result.totalRevenue || 0,
+         totalExpenditure,
         lastThreeTransactions: minimalTransactions,
       },
     });
