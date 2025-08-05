@@ -368,6 +368,7 @@ exports.getTodayRevenuebyDoctorId = async (req, res) => {
 exports.getDoctorRevenueSummaryThismonth = async (req, res) => {
   try {
     const doctorId = req.headers.userid;
+    const { startDate, endDate } = req.query;
     if (!doctorId) {
       return res.status(400).json({
         status: "fail",
@@ -375,16 +376,38 @@ exports.getDoctorRevenueSummaryThismonth = async (req, res) => {
       });
     }
 
-    const today = new Date();
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    let start, end ;
+    if(startDate && endDate){
+         start = new Date(startDate);
+       end = new Date(endDate);
+      // Validate dates
+      if (isNaN(start) || isNaN(end)) {
+        return res.status(400).json({
+          status: "fail",
+          message: "Invalid date format",
+        });
+      }
+      // Check if startDate is not after endDate
+      if (start > end) {
+        return res.status(400).json({
+          status: "fail",
+          message: "Start date cannot be after end date",
+        });
+      }
+    }else{
+ const today = new Date();
+     start = new Date(today.getFullYear(), today.getMonth(), 1);
+     end = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    }
+
+  
 
     const revenueByCategory = await paymentModel.aggregate([
       {
         $match: {
           doctorId: doctorId,
           paymentStatus: "paid",
-          createdAt: { $gte: startOfMonth, $lt: endOfMonth },
+          createdAt: { $gte: start, $lt: end },
           paymentFrom: { $in: ['appointment', 'lab', 'pharmacy'] }
         },
       },
