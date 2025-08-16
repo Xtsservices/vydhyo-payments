@@ -369,6 +369,7 @@ exports.getDoctorRevenueSummaryThismonth = async (req, res) => {
   try {
     const doctorId = req.headers.userid;
     const { startDate, endDate } = req.query;
+    console.log("am in========", doctorId, startDate, endDate)
     if (!doctorId) {
       return res.status(400).json({
         status: "fail",
@@ -386,6 +387,14 @@ exports.getDoctorRevenueSummaryThismonth = async (req, res) => {
           status: "fail",
           message: "Invalid date format",
         });
+      }
+
+      if (start.toDateString() === end.toDateString()) {
+        end.setHours(23, 59, 59, 999);
+      } else {
+        // For multi-day queries, set end to the start of the next day
+        end.setDate(end.getDate() + 1);
+        end.setHours(0, 0, 0, 0);
       }
       // Check if startDate is not after endDate
       if (start > end) {
