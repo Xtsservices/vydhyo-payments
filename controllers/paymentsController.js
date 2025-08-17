@@ -378,9 +378,12 @@ exports.getDoctorRevenueSummaryThismonth = async (req, res) => {
     }
 
     let start, end ;
+     const IST_OFFSET = 5.5 * 60 * 60 * 1000;
     if(startDate && endDate){
-         start = new Date(startDate);
-       end = new Date(endDate);
+      //    start = new Date(startDate);
+      //  end = new Date(endDate);
+       start = new Date(new Date(startDate).getTime() - IST_OFFSET);
+      end = new Date(new Date(endDate).getTime() - IST_OFFSET);
       // Validate dates
       if (isNaN(start) || isNaN(end)) {
         return res.status(400).json({
