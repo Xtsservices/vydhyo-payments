@@ -38,6 +38,9 @@ appointmentId: Joi.when("paymentFrom", {
       "any.only": "paymentFrom must be one of appointment, lab, or pharmacy",
       "string.base": "paymentFrom must be a string",
     }),
+    appSource: Joi.string()
+  .valid('patientApp', 'walkIn')
+  .required(),
 
   paymentMethod: Joi.string()
     .valid("card", "upi", "netbanking", "cash", "wallet")

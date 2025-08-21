@@ -31,6 +31,12 @@ const paymentSchema = new mongoose.Schema({
         required: true,
         default: 'cash'
     },
+     appSource: {
+        type: String,
+        enum: ['patientApp', 'walkIn'],
+        required: true,
+        default: 'patientApp'
+    },
     paymentStatus: {
         type: String,
         enum: ['pending', 'paid', 'cancelled', 'refund_pending', 'refunded', 'refund_failed'],
