@@ -33,9 +33,9 @@ const paymentSchema = new mongoose.Schema({
     },
      appSource: {
         type: String,
-        enum: ['patientApp', 'walkIn'],
-        required: true,
-        default: 'patientApp'
+        enum: ['patientApp', 'walkIn', null],
+        required: false,   // 🔹 now optional
+        default: null  
     },
     paymentStatus: {
         type: String,
