@@ -40,7 +40,8 @@ appointmentId: Joi.when("paymentFrom", {
     }),
     appSource: Joi.string()
   .valid('patientApp', 'walkIn')
-  .required(),
+   .optional()
+    .allow(null),
 
   paymentMethod: Joi.string()
     .valid("card", "upi", "netbanking", "cash", "wallet")
