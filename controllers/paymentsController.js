@@ -21,7 +21,7 @@ const env = CFEnvironment.SANDBOX;
 const clientId = process.env.CASHFREE_CLIENT_ID_sandbox || '';
 const clientSecret = process.env.CASHFREE_CLIENT_SECRET_sandbox || '';
 
-const returnUrl = process.env.CASHFREE_RETURN_URL || 'https://welfarecanteen.in/payment-status';
+const returnUrl = process.env.CASHFREE_RETURN_URL || 'https://vydhyo.com/payment-status';
 
 // Initialize Cashfree SDK
 const cashfree = new Cashfree(env, clientId, clientSecret);
@@ -48,7 +48,7 @@ exports.createPaymentOrder = async (req, res) => {
     order_meta: {
       return_url: `${returnUrl}?order_id=${customer_id}`,
     },
-    order_note: 'Test order from React Native app',
+    order_note: 'from React Native app',
   };
 
   try {
