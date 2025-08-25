@@ -11,7 +11,8 @@ const {
     getDoctorTodayAndThisMonthRevenue,
     getTransactionHistory,
     getPatientHistory,
-    getPaymentsByDoctorAndUser
+    getPaymentsByDoctorAndUser,
+    createPaymentOrder
    
 } = require('../controllers/paymentsController');
 
@@ -29,6 +30,10 @@ router.get('/getDoctorTodayAndThisMonthRevenue/:paymentFrom', getDoctorTodayAndT
 router.post('/getTransactionHistory', getTransactionHistory);
 router.get('/getPatientHistory', getPatientHistory);
 router.get('/getPaymentsByDoctorAndUser/:doctorId', getPaymentsByDoctorAndUser);
+
+//payment sdk
+router.post('/createPaymentOrder', createPaymentOrder);
+
 
 
 module.exports = router;
