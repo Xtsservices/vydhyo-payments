@@ -6,3 +6,4 @@ const SEQUENCE_PREFIX = {
 };
 
 exports.SEQUENCE_PREFIX = SEQUENCE_PREFIX;
+

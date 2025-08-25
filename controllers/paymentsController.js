@@ -7,6 +7,7 @@ const commanFunction=require("../CommanClass/commanFunctions");
 const axios = require("axios");
 const moment = require('moment-timezone');
 const expenseModel = require("../models/expenseModel");
+const platformFee = require("../utils/fees").PLATFORM_FEE;
 
 exports.createPayment = async (req, res) => {
   try {
@@ -323,14 +324,29 @@ exports.getTodayRevenuebyDoctorId = async (req, res) => {
           doctorId: doctorId,
           paymentStatus: "paid",
           createdAt: { $gte: startOfToday, $lt: endOfToday },
+          
         },
       },
       {
         $group: {
           _id: null,
-          total: { $sum: "$finalAmount" },
+          total: {
+            $sum: {
+              $cond: [
+                { $eq: ["$appSource", "patientApp"] },
+                { $subtract: ["$finalAmount", platformFee] },
+                "$finalAmount",
+              ],
+            },
+          },
         },
       },
+      // {
+      //   $group: {
+      //     _id: null,
+      //     total: { $sum: "$finalAmount" },
+      //   },
+      // },
     ]);
 
     // This month's revenue
@@ -345,9 +361,23 @@ exports.getTodayRevenuebyDoctorId = async (req, res) => {
       {
         $group: {
           _id: null,
-          total: { $sum: "$finalAmount" },
+          total: {
+            $sum: {
+              $cond: [
+                { $eq: ["$appSource", "patientApp"] },
+                { $subtract: ["$finalAmount", platformFee] },
+                "$finalAmount",
+              ],
+            },
+          },
         },
       },
+      // {
+      //   $group: {
+      //     _id: null,
+      //     total: { $sum: "$finalAmount" },
+      //   },
+      // },
     ]);
 
     return res.status(200).json({
@@ -376,7 +406,7 @@ exports.getDoctorRevenueSummaryThismonth = async (req, res) => {
         message: "Doctor ID is required",
       });
     }
-
+console.log(platformFee,"platformFee")
     let start, end ;
      const IST_OFFSET = 5.5 * 60 * 60 * 1000;
     if(startDate && endDate){
@@ -423,12 +453,27 @@ exports.getDoctorRevenueSummaryThismonth = async (req, res) => {
           paymentFrom: { $in: ['appointment', 'lab', 'pharmacy'] }
         },
       },
+
       {
         $group: {
           _id: "$paymentFrom",
-          total: { $sum: "$finalAmount" },
+          total: {
+            $sum: {
+              $cond: [
+                { $eq: ["$appSource", "patientApp"] },
+                { $subtract: ["$finalAmount", platformFee] },
+                "$finalAmount",
+              ],
+            },
+          },
         },
       },
+      // {
+      //   $group: {
+      //     _id: "$paymentFrom",
+      //     total: { $sum: "$finalAmount" },
+      //   },
+      // },
     ]);
 
     // Convert to { appointment: X, lab: Y, pharmacy: Z }
@@ -482,14 +527,48 @@ exports.getDoctorRevenue = async (req, res) => {
             {
               $group: {
                 _id: null,
-                total: { $sum: "$finalAmount" },
+                total: {
+                  $sum: {
+                    $cond: [
+                      { $eq: ["$appSource", "patientApp"] },
+                      { $subtract: ["$finalAmount", platformFee] },
+                      "$finalAmount",
+                    ],
+                  },
+                },
               },
             },
+            // {
+            //   $group: {
+            //     _id: null,
+            //     total: { $sum: "$finalAmount" },
+            //   },
+            // },
           ],
           lastThreeTransactions: [
             { $sort: { paidAt: -1 } },
             { $limit: 3 },
-            { $project: { userId: 1, finalAmount: 1, paidAt: 1 } },
+            {
+              $project: {
+                userId: 1,
+                finalAmount: {
+                  $cond: [
+                    { $eq: ["$appSource", "patientApp"] },
+                    { $subtract: ["$finalAmount", platformFee] },
+                    "$finalAmount",
+                  ],
+                },
+                paidAt: 1,
+                platformFeeDeducted: {
+                  $cond: [
+                    { $eq: ["$appSource", "patientApp"] },
+                    platformFee,
+                    0,
+                  ],
+                },
+              },
+            },
+            // { $project: { userId: 1, finalAmount: 1, paidAt: 1 } },
           ],
         },
       },
@@ -1129,9 +1208,18 @@ exports.getTransactionHistory = async (req, res) => {
           ? `${user.firstname} ${user.lastname}`.trim()
           : "Unknown";
 
+           const adjustedAmount =
+          txn.appSource === "patientApp"
+            ? txn.finalAmount - platformFee
+            : txn.finalAmount;
+        const platformFeeDeducted = txn.appSource === "patientApp" ? platformFee : 0;
+
+
         return {
           ...txn.toObject(),
           patientName,
+           finalAmount: adjustedAmount,
+           platformFeeDeducted,
         };
       })
     );
