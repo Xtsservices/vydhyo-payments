@@ -9,6 +9,70 @@ const moment = require('moment-timezone');
 const expenseModel = require("../models/expenseModel");
 const platformFee = require("../utils/fees").PLATFORM_FEE;
 
+//cashfree sdk
+const { Cashfree, CFEnvironment } = require("cashfree-pg");
+
+//here we should keep production when we are ready to go live
+// const env = CFEnvironment.PRODUCTION 
+// const clientId = process.env.pgAppID;
+// const clientSecret = process.env.pgSecreteKey;
+
+// this is local
+const env = CFEnvironment.SANDBOX;
+const clientId = process.env.CASHFREE_CLIENT_ID_sandbox || '';
+const clientSecret = process.env.CASHFREE_CLIENT_SECRET_sandbox || '';
+
+const returnUrl = process.env.CASHFREE_RETURN_URL || 'https://vydhyo.com/payment-status';
+
+// Initialize Cashfree SDK
+const cashfree = new Cashfree(env, clientId, clientSecret);
+
+
+exports.createPaymentOrder = async (req, res) => {
+  try {
+   
+    const { customer_id, customer_email, customer_phone, order_amount, order_currency = 'INR' } = req.body;
+
+  if (!customer_id || !customer_email || !customer_phone) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  const orderRequest = {
+    order_amount,
+    order_currency,
+    customer_details: {
+      customer_id,
+      customer_name: 'Demo User',
+      customer_email,
+      customer_phone,
+    },
+    order_meta: {
+      return_url: `${returnUrl}?order_id=${customer_id}`,
+    },
+    order_note: 'from React Native app',
+  };
+
+  try {
+    const response = await cashfree.PGCreateOrder(orderRequest);
+    res.status(201).json(response.data);
+  } catch (error) {
+    res.status(500).json({
+      error: 'Cashfree order creation failed.',
+      reason: error?.response?.data?.message || 'Internal server error',
+    });
+  }
+
+  } catch (error) {
+    console.error("Error creating payment order:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to create payment order",
+    });
+  }
+};  
+
+
+
 exports.createPayment = async (req, res) => {
   try {
     console.log("paymentFrom", req.body);
