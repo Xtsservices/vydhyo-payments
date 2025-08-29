@@ -44,7 +44,7 @@ appointmentId: Joi.when("paymentFrom", {
     .allow(null),
 
   paymentMethod: Joi.string()
-    .valid("card", "upi", "netbanking", "cash", "wallet")
+    .valid("card", "upi", "netbanking", "cash", "wallet", "free") //free means referral
     .optional()
     .default("cash"),
 
@@ -60,13 +60,13 @@ appointmentId: Joi.when("paymentFrom", {
     .default("pending"),
 
   transactionId: Joi.when("paymentMethod", {
-    is: Joi.valid("cash"),
+    is: Joi.valid("cash",  "free"),
     then: Joi.string().optional().allow(null),
     otherwise: Joi.string().required(),
   }),
 
   paymentGateway: Joi.when("paymentMethod", {
-    is: Joi.valid("cash"),
+    is: Joi.valid("cash", "free"),
     then: Joi.string().optional().allow(null),
     otherwise: Joi.string().required(),
   }),
@@ -74,6 +74,7 @@ appointmentId: Joi.when("paymentFrom", {
   paidAt: Joi.date().optional(),
   createdAt: Joi.date().optional(),
   updatedAt: Joi.date().optional(),
+  platformFee: Joi.number().optional().default(0),
 });
 
 module.exports = paymentValidationSchema;

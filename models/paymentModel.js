@@ -1,3 +1,4 @@
+const { optional } = require('joi');
 const mongoose = require('mongoose');
 
 const paymentSchema = new mongoose.Schema({
@@ -43,13 +44,18 @@ const paymentSchema = new mongoose.Schema({
         enum: ['pending', 'paid', 'cancelled', 'refund_pending', 'refunded', 'refund_failed'],
         default: 'pending'
     },
+    paymentMethod:{
+        type: String,
+       default: null 
+    },
     transactionId: { type: String },
     paymentGateway: { type: String },
     paidAt: { type: Date, default: Date.now },
     createdBy: { type: String },
     updatedBy: { type: String },
     createdAt: { type: Date, default: Date.now },
-    updatedAt: { type: Date, default: Date.now }
+    updatedAt: { type: Date, default: Date.now },
+    platformFee: { type: Number, default: 0 },
 });
 
 paymentSchema.pre('save', function (next) {
