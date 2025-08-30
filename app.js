@@ -6,6 +6,7 @@ const connectDB = require('./utils/db');
 const logger = require('./utils/logger'); 
 const financeRoutes = require('./routes/paymentsRoutes');
 const expenseRoutes = require('./routes/expenseRoutes');
+const walletRoutes = require('./routes/walletRoutes');
 // Middleware
 const app = express();
 app.use(express.json());
@@ -16,6 +17,7 @@ connectDB();
 // Routes
 app.use('/finance', financeRoutes);
 app.use('/finance', expenseRoutes);
+app.use('/wallet', walletRoutes);
 
 
 // Connect to MongoDB and start server
