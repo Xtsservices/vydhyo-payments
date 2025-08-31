@@ -12,9 +12,10 @@ const {
     getTransactionHistory,
     getPatientHistory,
     getPaymentsByDoctorAndUser,
-    createPaymentOrder
+    createPaymentOrder,
    
 } = require('../controllers/paymentsController');
+const { getUserWallet } = require('../controllers/walletController');
 
 router.post('/createPayment', createPayment);
 router.get('/getAppointmentPayment', getAppointmentPayment);
@@ -33,6 +34,7 @@ router.get('/getPaymentsByDoctorAndUser/:doctorId', getPaymentsByDoctorAndUser);
 
 //payment sdk
 router.post('/createPaymentOrder', createPaymentOrder);
+router.get('/:customerID', getUserWallet);
 
 
 
