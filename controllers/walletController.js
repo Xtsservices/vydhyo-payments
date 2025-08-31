@@ -157,9 +157,11 @@ exports.getUserWallet = async (req, res) => {
       });
     }
 
+     const normalizedCustomerID = customerID.toUpperCase();
     // Query user-specific collection
-    const CustomerWalletTransaction = customerWalletTransactionModel(customerID);
-    const transactions = await CustomerWalletTransaction.find({ customerID })
+    const CustomerWalletTransaction = customerWalletTransactionModel(normalizedCustomerID);
+    // const transactions = await CustomerWalletTransaction.find({ normalizedCustomerID })
+    const transactions = await CustomerWalletTransaction.find({ customerID: normalizedCustomerID })
       .sort({ createdAt: -1 })
       .limit(100);
 
@@ -173,7 +175,7 @@ exports.getUserWallet = async (req, res) => {
 
     return res.status(200).json({
       status: 'success',
-      message: `Wallet transactions and balance for ${customerID} retrieved successfully`,
+      message: `Wallet transactions and balance for ${normalizedCustomerID} retrieved successfully`,
       data: {
         customerID,
         balance,
@@ -182,10 +184,10 @@ exports.getUserWallet = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error(`Error retrieving wallet transactions for ${customerID}:`, err.message);
+    console.error(`Error retrieving wallet transactions for ${normalizedCustomerID}:`, err.message);
     return res.status(500).json({
       status: 'fail',
-      message: `Error retrieving wallet transactions for ${customerID}`,
+      message: `Error retrieving wallet transactions for ${normalizedCustomerID}`,
       error: err.message,
     });
   }
