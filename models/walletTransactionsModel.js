@@ -9,6 +9,7 @@ const walletTransactionsSchema = new Schema({
   purpose: { type: String, required: true }, // Purpose (e.g., "referral_reward", "appointment_payment")
   description: { type: String }, // Details (e.g., "Reward for referral code XYZ")
   currency: { type: String, default: 'INR' }, // Currency (defaults to INR)
+  appointmentId: { type: String, default: null },
   status: { type: String, enum: ['pending', 'approved', 'failed'], default: 'approved' }, // Transaction status
   createdAt: { type: Number, default: Date.now }, // Creation timestamp
   createdBy: { type: String, default: 'system' }, // Who created it (e.g., "system")

@@ -60,13 +60,13 @@ appointmentId: Joi.when("paymentFrom", {
     .default("pending"),
 
   transactionId: Joi.when("paymentMethod", {
-    is: Joi.valid("cash",  "free"),
+    is: Joi.valid("cash",  "free", "wallet"),
     then: Joi.string().optional().allow(null),
     otherwise: Joi.string().required(),
   }),
 
   paymentGateway: Joi.when("paymentMethod", {
-    is: Joi.valid("cash", "free"),
+    is: Joi.valid("cash", "free", "wallet"),
     then: Joi.string().optional().allow(null),
     otherwise: Joi.string().required(),
   }),

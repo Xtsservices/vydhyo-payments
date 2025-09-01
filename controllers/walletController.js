@@ -42,6 +42,7 @@ exports.createWalletTransaction = async (req, res) => {
       transactionType,
       purpose,
       description,
+      appointmentId,
       currency = 'INR',
       status = 'approved',
       createdAt = Date.now(),
@@ -80,7 +81,6 @@ exports.createWalletTransaction = async (req, res) => {
         message: 'statusHistory must be an array',
       });
     }
-console.log("Creating transaction for customer:", customerID);
 
     const transactionData = {
       customerID,
@@ -90,6 +90,7 @@ console.log("Creating transaction for customer:", customerID);
       purpose,
       description,
       currency,
+      appointmentId,
       status,
       createdAt,
       createdBy,
@@ -120,6 +121,7 @@ console.log("Creating transaction for customer:", customerID);
         purpose: transaction.purpose,
         description: transaction.description,
         currency: transaction.currency,
+        appointmentId: transaction.appointmentId,
         status: transaction.status,
         createdAt: transaction.createdAt,
         createdBy: transaction.createdBy,
@@ -188,6 +190,77 @@ exports.getUserWallet = async (req, res) => {
     return res.status(500).json({
       status: 'fail',
       message: `Error retrieving wallet transactions for ${normalizedCustomerID}`,
+      error: err.message,
+    });
+  }
+};
+
+exports.updateWalletTransaction = async (req, res) => {
+  console.log("Update Wallet Transaction Request Body:", req.body);
+  try {
+    const {customerID, transactionID, status, statusHistory } = req.body;
+
+    if (!transactionID || !status) {
+      return res.status(400).json({
+        status: "fail",
+        message: "transactionID and status are required",
+      });
+    }
+
+    if (!["pending", "approved", "failed"].includes(status)) {
+      return res.status(400).json({
+        status: "fail",
+        message: 'Invalid status. Must be "pending", "approved", or "failed"',
+      });
+    }
+
+    if (statusHistory && !Array.isArray(statusHistory)) {
+      return res.status(400).json({
+        status: "fail",
+        message: "statusHistory must be an array",
+      });
+    }
+
+    const CustomerWalletTransaction = customerWalletTransactionModel(req.body.customerID);
+    const updatedTransaction = await CustomerWalletTransaction.findOneAndUpdate(
+      { transactionID },
+      {
+        status,
+        statusHistory,
+        updatedAt: Date.now(),
+        updatedBy: req.headers?.userid || "system",
+      },
+      { new: true }
+    );
+console.log("Updated Transaction:", updatedTransaction);
+    if (!updatedTransaction) {
+      return res.status(404).json({
+        status: "fail",
+        message: `Transaction with ID ${transactionID} not found`,
+      });
+    }
+
+    // Optionally update the general WalletTransactions collection
+    await walletTransactionsModel.findOneAndUpdate(
+      { transactionID },
+      {
+        status,
+        statusHistory,
+        updatedAt: Date.now(),
+        updatedBy: req.headers?.userid || "system",
+      }
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: `Wallet transaction ${transactionID} updated successfully`,
+      data: updatedTransaction,
+    });
+  } catch (err) {
+    console.error("Error updating wallet transaction:", err.message);
+    return res.status(500).json({
+      status: "fail",
+      message: "Error updating wallet transaction",
       error: err.message,
     });
   }
