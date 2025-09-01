@@ -34,7 +34,7 @@ const paymentSchema = new mongoose.Schema({
     },
      appSource: {
         type: String,
-        enum: ['patientApp', 'walkIn', null],
+        enum: ['patientApp', 'walkIn','whatsapp', null],
         required: false,   // 🔹 now optional
         default: null  
     },
@@ -56,6 +56,7 @@ const paymentSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
     platformFee: { type: Number, default: 0 },
+    linkId: { type: String, default: null },
 });
 
 paymentSchema.pre('save', function (next) {

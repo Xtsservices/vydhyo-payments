@@ -71,6 +71,42 @@ exports.createPaymentOrder = async (req, res) => {
   }
 };  
 
+exports.updateWhatsAppPaymentStatus = async (req, res) => {
+  try {
+    const { linkId, status } = req.body;
+
+    if (!linkId || !status) {
+      return res.status(400).json({
+        status: "fail",
+        message: "linkId and status are required",
+      });
+    }
+
+    const payment = await paymentModel.findOne({ linkId });
+    if (!payment) {
+      return res.status(404).json({
+        status: "fail",
+        message: "Payment not found",
+      });
+    }
+
+    payment.paymentStatus = status;
+    await payment.save();
+
+    return res.status(200).json({
+      status: "success",
+      message: "Payment status updated successfully",
+      data: payment,
+    });
+  } catch (error) {
+    console.error("Error updating WhatsApp payment status:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to update payment status",
+    });
+  }
+};
+
 
 
 exports.createPayment = async (req, res) => {
@@ -85,9 +121,16 @@ exports.createPayment = async (req, res) => {
         message: error.details[0].message,
       });
     }
-    console.log(req.headers, "req.headers")
-    req.body.createdBy = req.headers ? req.headers.userid : null;
-    req.body.updatedBy = req.headers ? req.headers.userid : null;
+
+    console.log(req.headers, "req.headers");
+
+    if(req.headers && req.headers.userid) {
+      req.body.createdBy = req.headers.userid;
+      req.body.updatedBy = req.headers.userid;
+    }else{
+      req.body.createdBy = req.body.userId || null;
+      req.body.updatedBy = req.body.userId || null;
+    }
 
     const paymentCounter = await sequenceSchema.findByIdAndUpdate(
       {
