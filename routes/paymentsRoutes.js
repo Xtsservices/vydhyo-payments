@@ -13,11 +13,13 @@ const {
     getPatientHistory,
     getPaymentsByDoctorAndUser,
     createPaymentOrder,
+    updateWhatsAppPaymentStatus,
    
 } = require('../controllers/paymentsController');
 const { getUserWallet } = require('../controllers/walletController');
 
 router.post('/createPayment', createPayment);
+router.post('/updateWhatsAppPaymentStatus', updateWhatsAppPaymentStatus);
 router.get('/getAppointmentPayment', getAppointmentPayment);
 router.post('/getAppointmentPayments', getMultipleAppointmentPayments);
 router.get('/getTotalAmount', getTotalAmount);

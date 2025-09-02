@@ -39,7 +39,7 @@ appointmentId: Joi.when("paymentFrom", {
       "string.base": "paymentFrom must be a string",
     }),
     appSource: Joi.string()
-  .valid('patientApp', 'walkIn')
+  .valid('patientApp', 'walkIn' ,'whatsapp')
    .optional()
     .allow(null),
 
@@ -75,6 +75,7 @@ appointmentId: Joi.when("paymentFrom", {
   createdAt: Joi.date().optional(),
   updatedAt: Joi.date().optional(),
   platformFee: Joi.number().optional().default(0),
+  linkId: Joi.string().optional().allow(null),
 });
 
 module.exports = paymentValidationSchema;
