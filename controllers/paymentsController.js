@@ -29,6 +29,7 @@ const cashfree = new Cashfree(env, clientId, clientSecret);
 
 
 exports.createPaymentOrder = async (req, res) => {
+  console.log("Request Body for createPaymentOrder:", req.body);
   try {
    
     const { customer_id, customer_email, customer_phone, order_amount, order_currency = 'INR' } = req.body;
@@ -51,9 +52,11 @@ exports.createPaymentOrder = async (req, res) => {
     },
     order_note: 'from React Native app',
   };
-
+console.log("Order Request for Cashfree:", orderRequest);
   try {
+    console.log("Creating Cashfree Order with request:", orderRequest);
     const response = await cashfree.PGCreateOrder(orderRequest);
+    console.log("Cashfree Order Response:", response);
     res.status(201).json(response.data);
   } catch (error) {
     res.status(500).json({
