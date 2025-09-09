@@ -1475,3 +1475,30 @@ exports.getPaymentsByDoctorAndUser = async (req, res) => {
     });
   }
 };
+
+  exports.getPaymentsByOrderId = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    const response = await axios.get(
+      `${process.env.CASHFREE_BASE_URL}/orders/${orderId}/payments`,
+      {
+        headers: {
+          "x-client-id": clientId,
+          "x-client-secret": clientSecret,
+          "x-api-version": "2023-08-01",
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    return res.status(200).json(response.data);
+  } catch (error) {
+    console.error("Cashfree API Error:", error.response?.data || error.message);
+
+    return res.status(500).json({
+      status: "fail",
+      message: error.response?.data || "Something went wrong",
+    });
+  }
+};

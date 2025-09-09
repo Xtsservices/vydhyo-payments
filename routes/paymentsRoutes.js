@@ -14,6 +14,7 @@ const {
     getPaymentsByDoctorAndUser,
     createPaymentOrder,
     updateWhatsAppPaymentStatus,
+    getPaymentsByOrderId,
    
 } = require('../controllers/paymentsController');
 const { getUserWallet } = require('../controllers/walletController');
@@ -37,6 +38,7 @@ router.get('/getPaymentsByDoctorAndUser/:doctorId', getPaymentsByDoctorAndUser);
 //payment sdk
 router.post('/createPaymentOrder', createPaymentOrder);
 router.get('/:customerID', getUserWallet);
+router.get('/getPaymentsByOrderId/:orderId', getPaymentsByOrderId);
 
 
 
