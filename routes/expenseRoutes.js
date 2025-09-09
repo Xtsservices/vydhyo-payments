@@ -3,7 +3,7 @@ const { createExpense, getExpenses } = require('../controllers/expenseController
 const router = express.Router();
 
 router.post('/createExpense', createExpense);
-router.get('/getExpense', getExpenses);
+router.get('/getExpense/:userId', getExpenses);
 
 
 module.exports = router;
