@@ -13,14 +13,14 @@ const platformFee = require("../utils/fees").PLATFORM_FEE;
 const { Cashfree, CFEnvironment } = require("cashfree-pg");
 
 //here we should keep production when we are ready to go live
-const env = CFEnvironment.PRODUCTION 
-const clientId = process.env.pgAppID;
-const clientSecret = process.env.pgSecreteKey;
+// const env = CFEnvironment.PRODUCTION 
+// const clientId = process.env.pgAppID;
+// const clientSecret = process.env.pgSecreteKey;
 
 // this is local
-// const env = CFEnvironment.SANDBOX;
-// const clientId = process.env.CASHFREE_CLIENT_ID_sandbox || '';
-// const clientSecret = process.env.CASHFREE_CLIENT_SECRET_sandbox || '';
+const env = CFEnvironment.SANDBOX;
+const clientId = process.env.CASHFREE_CLIENT_ID_sandbox || '';
+const clientSecret = process.env.CASHFREE_CLIENT_SECRET_sandbox || '';
 
 const returnUrl = process.env.CASHFREE_RETURN_URL || 'https://vydhyo.com/payment-status';
 
