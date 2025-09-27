@@ -15,6 +15,8 @@ const {
     createPaymentOrder,
     updateWhatsAppPaymentStatus,
     getPaymentsByOrderId,
+    createWebviewPayment,
+    getPaymentDetailsByLinkId,
    
 } = require('../controllers/paymentsController');
 const { getUserWallet } = require('../controllers/walletController');
@@ -40,6 +42,9 @@ router.post('/createPaymentOrder', createPaymentOrder);
 router.get('/:customerID', getUserWallet);
 router.get('/getPaymentsByOrderId/:orderId', getPaymentsByOrderId);
 
+//webview payments
+router.post('/placeOrder', createWebviewPayment);
+router.get('/getstatusbyLinkid/:linkId', getPaymentDetailsByLinkId);
 
 
 module.exports = router;

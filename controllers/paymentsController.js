@@ -11,6 +11,7 @@ const platformFee = require("../utils/fees").PLATFORM_FEE;
 
 //cashfree sdk
 const { Cashfree, CFEnvironment } = require("cashfree-pg");
+const { PaymentLink, getPaymentLinkDetails } = require("../utils/paymets");
 
 //here we should keep production when we are ready to go live
 const env = CFEnvironment.PRODUCTION 
@@ -1493,6 +1494,52 @@ exports.getPaymentsByDoctorAndUser = async (req, res) => {
     );
 
     return res.status(200).json(response.data);
+  } catch (error) {
+    console.error("Cashfree API Error:", error.response?.data || error.message);
+
+    return res.status(500).json({
+      status: "fail",
+      message: error.response?.data || "Something went wrong",
+    });
+  }
+};
+
+
+exports.createWebviewPayment = async (req, res) => {
+  try {
+    const payment = req.body;
+    console.log("Received Payment Data:", payment); // Debug log
+    
+      // const body = { mobile: user.mobile, amount: amount, currency: 'INR' };
+
+    if (!payment.amount || !payment.mobile) {
+      return res.status(400).json({ message: "Invalid payment data" });
+    }
+
+    const linkResponse = await PaymentLink(payment);
+console.log("Link Response:", linkResponse); // Debug log
+    res
+      .status(200)
+      .json(linkResponse || { message: "Failed to create payment link" });
+  } catch (error) {
+    console.error("Error in placeOrder:", error); // Debug log
+    logger.error(`Error in placeOrder: ${error.message}`);
+    throw error;
+  }
+}
+
+exports.getPaymentDetailsByLinkId = async (req, res) => {
+  try {
+    const linkId = req.params.linkId;
+
+    if (!linkId) {
+      return res.status(400).json({ message: "Payment Link ID is required" });
+    }
+
+   const response = await getPaymentLinkDetails(linkId);
+   console.log("Payment Link Details Response:", response); // Debug log
+
+    return res.status(200).json(response);
   } catch (error) {
     console.error("Cashfree API Error:", error.response?.data || error.message);
 
